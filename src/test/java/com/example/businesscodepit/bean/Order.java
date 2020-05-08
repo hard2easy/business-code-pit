@@ -6,9 +6,7 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import static java.util.stream.Collectors.toList;
 
@@ -23,7 +21,9 @@ import static java.util.stream.Collectors.toList;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@RequiredArgsConstructor
 public class Order {
+    @NonNull
     private Long id;
     private Long customerId;//顾客ID
     private String customerName;//顾客姓名
