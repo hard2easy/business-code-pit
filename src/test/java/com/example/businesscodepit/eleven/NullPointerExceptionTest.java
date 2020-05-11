@@ -14,6 +14,23 @@ import java.util.concurrent.ConcurrentHashMap;
  * 诸如 ConcurrentHashMap 这样的容器不支持 Key 和 Value 为 null，强行 put null 的 Key 或 Value 会出现空指针异常；
  * A 对象包含了 B，在通过 A 对象的字段获得 B 之后，没有对字段判空就级联调用 B 的方法出现空指针异常；
  * 方法或远程服务返回的 List 不是空而是 null，没有进行判空就直接调用 List 的方法出现空指针异常
+ *
+ * 小心 MySQL 中有关 NULL 的三个坑
+ *      MySQL 中 sum 函数没统计到任何记录时，会返回 null 而不是 0
+ *      MySQL 中 count 字段不统计 null 值,count(score)  如果满足where条件后的数据中score有为null的 那么不会进行统计
+ *      MySQL 中使用诸如 =、<> 这样的算数比较操作符比较 NULL 的结果总是 NULL
+ *          字段名 = null  字段名 ！= null 都查不出数据
+ * MyBatis实现是否需要更新字段为空的属性值
+ *      @Column 注解的updateIfNull属性，可以控制，当对应的列value为null时，updateIfNull的true和false可以控制
+ * ConcurrentHashMap 的 Key 和 Value 都不能为 null，而 HashMap 却可以，你知道这么设计的原因是什么吗
+ *
+ *      ConcurrentHashmap和Hashtable都是支持并发的，这样会有一个问题，
+ *          当你通过get(k)获取对应的value时，如果获取到的是null时，你无法判断，
+ *          它是put（k,v）的时候value为null，还是这个key从来没有做过映射。
+ *
+ *      HashMap是非并发的，可以通过contains(key)来做这个判断。
+ *      而支持并发的Map在调用m.contains（key）和m.get(key),m可能已经不同了。
+ * arthas 阿里诊断工具
  */
 public class NullPointerExceptionTest {
     private Logger log = LoggerFactory.getLogger(NullPointerExceptionTest.class);
