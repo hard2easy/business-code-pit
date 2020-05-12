@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <!--
+        注意:
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+        </filter>
+        该过滤器的设置是过滤出日志级别为INFO及以上的日志,并不是仅仅获取INFO级别的日志
+        查看LevelFilter的代码会发现:
+            if (!this.isStarted()) {
+                return FilterReply.NEUTRAL;
+            } else {
+                return event.getLevel().equals(this.level) ? this.onMatch : this.onMismatch;
+            }
+        this.isStarted()获取的是start属性,查看方法start()  发现只要配置<level>,start= true
+        默认值为:
+            this.onMatch = FilterReply.NEUTRAL;
+            this.onMismatch = FilterReply.NEUTRAL;
+        FilterReply.NEUTRAL表示接受该级别日志,不会过滤掉，因此如果需要仅得到level标签
+        设置的日志级别还需要配置onMatach以及onMismatch
+
+        ThresholdFilter
+            event.getLevel().isGreaterOrEqual(this.level)
+                ? FilterReply.NEUTRAL : FilterReply.DENY;
+            直接写死不存在配置 动态问题,一定是将level级别及以上级别的日志过滤出来
+
+    -->
+    <property name="logDir" value="./logs" />
+    <property name="app.name" value="common-mistakes" />
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+        </layout>
+    </appender>
+    <appender name="INFO_FILE" class="ch.qos.logback.core.FileAppender">
+        <File>${logDir}/${app.name}_info.log</File>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.FileAppender">
+        <File>${logDir}/${app.name}_error.log</File>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="INFO_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+</configuration>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <!--
+        FileAppender<E> extends OutputStreamAppender<E>
+            if (this.isStarted()) {
+            try {
+                if (event instanceof DeferredProcessingAware) {
+                    ((DeferredProcessingAware)event).prepareForDeferredProcessing();
+                }
+
+                byte[] byteArray = this.encoder.encode(event);
+                this.writeBytes(byteArray);
+            } catch (IOException var3) {
+                this.started = false;
+                this.addStatus(new ErrorStatus("IO failure in appender", this, var3));
+            }
+
+            private void writeBytes(byte[] byteArray) throws IOException {
+            if (byteArray != null && byteArray.length != 0) {
+                this.lock.lock();
+
+                try {
+                    this.outputStream.write(byteArray);
+                    if (this.immediateFlush) {
+                        this.outputStream.flush();
+                    }
+                } finally {
+                    this.lock.unlock();
+                }
+
+            }
+            发现其往日志文件里面写入日志数据时,是同步加锁的,因此记录日志时间长
+    -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>app.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <!--
+        使用logback提供的AsyncAppender 异步记录日志
+        使用该appender记录日志会存在几个问题
+            1.记录异步日志撑爆内存
+            2.记录异步日志出现日志丢失
+            3.记录异步日志出现阻塞
+
+    -->
+    <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+    </appender>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+        </layout>
+        <!--用于记录带有 time 标记的日志-->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>time</marker>
+            </evaluator>
+            <onMismatch>DENY</onMismatch>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+    </appender>
+    <!--测试日志丢失-->
+    <appender name="ASYNC_NON_CONSOLE" class="com.example.businesscodepit.thirteen.MySlowAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+        </layout>
+    </appender>
+    <appender name="ASYNC_NON_LOG" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ASYNC_NON_CONSOLE" />
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <root level="INFO">
+<!--    <appender-ref ref="FILE"/>-->
+        <appender-ref ref="ASYNCFILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_NON_LOG"/>
+    </root>
+</configuration>

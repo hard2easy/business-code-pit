@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%-5level] [%logger{40}:%line] - %msg%n</pattern>
+        </layout>
+    </appender>
+    <!--
+        一个是我们定义的 <logger>，
+        一个是 <root>，
+        由于我们定义的 <logger> 继承自 <root>，所以同一条日志既会通过 logger 记录，
+        也会发送到 root 记录，因此应用 package 下的日志出现了重复记录
+        logger会自动继承root的 appender-ref,如果不想基层可以配置参数additivity
+    -->
+    <logger name="com.example.businesscodepit.thirteen" level="DEBUG">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <!-- 正确配置 -->
+    <logger name="com.example.businesscodepit.thirteen" level="DEBUG"/>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
