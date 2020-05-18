@@ -8,6 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 反射、注解和泛型遇到重载和继承时可能会产生的坑
+ *
+ *      getMethods 和 getDeclaredMethods 是有区别的，前者可以查询到父类方法，后者只能查询到当前类。
+ *      反射进行方法调用要注意过滤桥接方法
  */
 @Slf4j
 public class OOPTest {
@@ -51,7 +54,7 @@ public class OOPTest {
      *       解决方案示例
      *               1.将getMethods替换成getDeclaredMethods   这样就只会获取当前类的public、protected、package 和 private 方法
      *                      getMethods是获取当前类以及父类的public、protected、package 和 private 方法
-     *                 按时
+     *                 但是这只是治标不治本,因为对于Child1而言 还是有两个setValue方法,重写父方法失败
      */
     @Test
     public void test2(){
@@ -66,6 +69,62 @@ public class OOPTest {
                     }
                 });
         System.out.println(child1.toString());
+        log.info(">>>>>>>>getDeclaredMethods");
+        Arrays.stream(child1.getClass().getDeclaredMethods())
+                .filter(method -> method.getName().equals("setValue"))
+                .forEach(method -> {
+                    try {
+                        method.invoke(child1, "test");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+        System.out.println(child1.toString());
+    }
+
+    /**
+     * 尽管Child2定义了泛型、@Override
+     * 但是还没无法达到预期的效果,因为Java 的泛型类型在编译后擦除为 Object。
+     *      虽然子类指定了父类泛型 T 类型是 String，但编译后 T 会被擦除成为 Object，
+     *      所以父类 setValue 方法的入参是 Object，value 也是 Object。
+     *      如果子类 Child2 的 setValue 方法要覆盖父类的 setValue 方法，那入参也必须是 Object。
+     *      所以，编译器会为我们生成一个所谓的 bridge 桥接方法，
+     *      使用 javap 命令来反编译编译后的 Child2 类的 class 字节码  可以使用method 的 isBridge 方法
+     *      获得结果 该方法是否桥接方法
+     */
+    @Test
+    public void test3(){
+        log.info(">>>>>>>>Child2");
+        Child2 child2 = new Child2();
+        Arrays.stream(child2.getClass().getDeclaredMethods())
+                .filter(method -> method.getName().equals("setValue"))
+                .forEach(method -> {
+                    try {
+                        method.invoke(child2, "test");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+        System.out.println(child2.toString());
+        //method.isBridge() 判断该方法是否桥接方法
+        log.info(">>>>>>>>exclude isBridge");
+        Arrays.stream(child2.getClass().getDeclaredMethods())
+                .filter(method -> method.getName().equals("setValue") && !method.isBridge())
+                .findFirst().ifPresent(method -> {
+            try {
+                method.invoke(child2, "test");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * 注解可以继承吗？
+     */
+    @Test
+    public void test4(){
+
     }
 }
 
@@ -91,6 +150,15 @@ class Parent<T> {
 class Child1 extends Parent {
     public void setValue(String value) {
         System.out.println("Child1.setValue called");
+        super.setValue(value);
+    }
+}
+
+
+class Child2 extends Parent<String> {
+    @Override
+    public void setValue(String value) {
+        System.out.println("Child2.setValue called");
         super.setValue(value);
     }
 }
